@@ -673,7 +673,7 @@ pub struct TsInfo {
 impl FromRedisValue for TsInfo {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
-            Value::Bulk(ref values) => {
+            Value::Array(ref values) => {
                 let mut result = TsInfo::default();
                 let mut map: HashMap<String, Value> = HashMap::new();
 
@@ -724,10 +724,10 @@ impl FromRedisValue for TsInfo {
                 }
 
                 result.rules = match map.get("rules") {
-                    Some(Value::Bulk(ref values)) => values
+                    Some(Value::Array(ref values)) => values
                         .iter()
                         .flat_map(|value| match value {
-                            Value::Bulk(ref vs) => Some((
+                            Value::Array(ref vs) => Some((
                                 from_redis_value(&vs[0]).unwrap(),
                                 from_redis_value(&vs[1]).unwrap(),
                                 from_redis_value(&vs[2]).unwrap(),
@@ -739,10 +739,10 @@ impl FromRedisValue for TsInfo {
                 };
 
                 result.labels = match map.get("labels") {
-                    Some(Value::Bulk(ref values)) => values
+                    Some(Value::Array(ref values)) => values
                         .iter()
                         .flat_map(|value| match value {
-                            Value::Bulk(ref vs) => Some((
+                            Value::Array(ref vs) => Some((
                                 from_redis_value(&vs[0]).unwrap(),
                                 from_redis_value(&vs[1]).unwrap(),
                             )),
@@ -772,7 +772,7 @@ pub struct TsMget<TS: FromRedisValue, V: FromRedisValue> {
 impl<TS: Default + FromRedisValue, V: Default + FromRedisValue> FromRedisValue for TsMget<TS, V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let res = match *v {
-            Value::Bulk(ref values) => TsMget {
+            Value::Array(ref values) => TsMget {
                 values: FromRedisValue::from_redis_values(values)?,
             },
             _ => TsMget { values: vec![] },
@@ -795,14 +795,14 @@ impl<TS: Default + FromRedisValue, V: Default + FromRedisValue> FromRedisValue
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
-            Value::Bulk(ref values) => {
+            Value::Array(ref values) => {
                 let result = TsMgetEntry::<TS, V> {
                     key: from_redis_value(&values[0])?,
                     labels: match values[1] {
-                        Value::Bulk(ref vs) => vs
+                        Value::Array(ref vs) => vs
                             .iter()
                             .flat_map(|value| match value {
-                                Value::Bulk(ref v) => Some((
+                                Value::Array(ref v) => Some((
                                     from_redis_value(&v[0]).unwrap(),
                                     from_redis_value(&v[1]).unwrap(),
                                 )),
@@ -812,7 +812,7 @@ impl<TS: Default + FromRedisValue, V: Default + FromRedisValue> FromRedisValue
                         _ => vec![],
                     },
                     value: match values[2] {
-                        Value::Bulk(ref vs) if !vs.is_empty() => Some((
+                        Value::Array(ref vs) if !vs.is_empty() => Some((
                             from_redis_value(&vs[0]).unwrap(),
                             from_redis_value(&vs[1]).unwrap(),
                         )),
@@ -840,7 +840,7 @@ pub struct TsRange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
 impl<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> FromRedisValue for TsRange<TS, V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
-            Value::Bulk(ref values) => {
+            Value::Array(ref values) => {
                 let items: Vec<TsValueReply<TS, V>> = FromRedisValue::from_redis_values(values)?;
                 Ok(TsRange {
                     values: items.iter().map(|i| (i.ts, i.value)).collect(),
@@ -866,7 +866,7 @@ impl<TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy> Fr
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let res = match *v {
-            Value::Bulk(ref values) => TsMrange {
+            Value::Array(ref values) => TsMrange {
                 values: FromRedisValue::from_redis_values(values)?,
             },
             _ => TsMrange { values: vec![] },
@@ -889,14 +889,14 @@ impl<TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy> Fr
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
-            Value::Bulk(ref values) => {
+            Value::Array(ref values) => {
                 let result = TsMrangeEntry::<TS, V> {
                     key: from_redis_value(&values[0]).unwrap(),
                     labels: match values[1] {
-                        Value::Bulk(ref vs) => vs
+                        Value::Array(ref vs) => vs
                             .iter()
                             .flat_map(|value| match value {
-                                Value::Bulk(ref v) => Some((
+                                Value::Array(ref v) => Some((
                                     from_redis_value(&v[0]).unwrap(),
                                     from_redis_value(&v[1]).unwrap(),
                                 )),
@@ -906,7 +906,7 @@ impl<TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy> Fr
                         _ => vec![],
                     },
                     values: match values[2] {
-                        Value::Bulk(ref vs) => {
+                        Value::Array(ref vs) => {
                             let items: Vec<TsValueReply<TS, V>> =
                                 FromRedisValue::from_redis_values(vs)?;
                             items.iter().map(|i| (i.ts, i.value)).collect()
@@ -934,7 +934,7 @@ struct TsValueReply<TS: FromRedisValue, V: FromRedisValue> {
 impl<TS: FromRedisValue, V: FromRedisValue> FromRedisValue for TsValueReply<TS, V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
-            Value::Bulk(ref values) => Ok(TsValueReply {
+            Value::Array(ref values) => Ok(TsValueReply {
                 ts: from_redis_value(&values[0]).unwrap(),
                 value: from_redis_value(&values[1]).unwrap(),
             }),
